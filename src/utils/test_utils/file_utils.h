@@ -34,6 +34,7 @@
 #define PMDK_TESTS_SRC_UTILS_TEST_UTILS_FILE_UTILS_H_
 
 #include <string>
+#include <array>
 #include "api_c/api_c.h"
 #include "constants.h"
 #include "poolset/poolset.h"
@@ -104,7 +105,7 @@ static inline int ValidatePoolset(const Poolset &poolset, int poolset_mode) {
  * print error message and returns -1 otherwise.
  */
 static inline int ValidateFile(const std::string &path, size_t file_size,
-                               int file_mode) {
+                               int file_mode, bool verbose = 1) {
   if (!ApiC::RegularFileExists(path)) {
     std::cerr << "File is missing" << std::endl;
     return -1;
@@ -122,7 +123,7 @@ static inline int ValidateFile(const std::string &path, size_t file_size,
   int ret = 0;
   int mode = 0;
   mode = ApiC::GetFilePermission(path);
-  if (file_mode != mode) {
+  if (verbose && file_mode != mode) {
     std::cerr << "File's permission mismatch\n" << path
               << "\nExpected: " << file_mode << "\nActual: " << mode
               << std::endl;
