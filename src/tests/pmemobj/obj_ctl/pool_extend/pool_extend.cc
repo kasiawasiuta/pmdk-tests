@@ -61,20 +61,3 @@ void ObjCtlPoolExtendTest::ReopenAndCheckPool(PMEMobjpool *pop, std::string path
   int ret = pmemobj_check(path.c_str(), layout);
   ASSERT_EQ(1, ret);
 }
-
-void ObjCtlPoolExtendTest::ListFiles(const std::string &path, std::function<void(const std::string &)> func, int* file_count) {
-
-  if (auto dir = opendir(path.c_str())) {
-    while (auto f = readdir(dir)) {
-      if (f->d_name[0] == '.') continue;
-      if (f->d_type == DT_DIR) {
-        ListFiles(path + f->d_name + "/", func, file_count);
-      }
-      if (f->d_type == DT_REG) {
-        func(path + f->d_name);
-        ++(*file_count);
-      }
-    }
-    closedir(dir);
-  }
-}

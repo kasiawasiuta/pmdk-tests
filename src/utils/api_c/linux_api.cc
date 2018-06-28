@@ -40,6 +40,7 @@
 #include <sys/statvfs.h>
 #include <unistd.h>
 #include <cstring>
+#include <dirent.h>
 
 int ApiC::AllocateFileSpace(const std::string &path, size_t length) {
   if (static_cast<off_t>(length) < 0) {
@@ -162,8 +163,27 @@ int ApiC::RemoveDirectoryT(const std::string &path) {
 int ApiC::SetEnv(const std::string &name, const std::string &value) {
   return setenv(name.c_str(), value.c_str(), 1);
 }
+
 int ApiC::UnsetEnv(const std::string &name) {
   return unsetenv(name.c_str());
+}
+
+void ApiC::CountFilesWithAction(const std::string &dir,
+  std::function<void(const std::string &)> func, int* file_count) {
+
+  if (auto dir = opendir(path.c_str())) {
+    while (auto f = readdir(dir)) {
+      if (f->d_name[0] == '.') continue;
+      if (f->d_type == DT_DIR) {
+        ListFiles(path + f->d_name + "/", func, file_count);
+      }
+      if (f->d_type == DT_REG) {
+        func(path + f->d_name);
+        ++(*file_count);
+      }
+    }
+    closedir(dir);
+  }
 }
 
 #endif // __linux__

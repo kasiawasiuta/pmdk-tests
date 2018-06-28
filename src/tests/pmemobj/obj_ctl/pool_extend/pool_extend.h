@@ -44,8 +44,6 @@
 #include <libpmemobj.h>
 #include <memory>
 #include <string>
-#include <tuple>
-#include <dirent.h>
 #include <math.h>
 
 extern std::unique_ptr<LocalConfiguration> local_config;
@@ -68,7 +66,6 @@ public:
   void TearDown();
   ObjCtlPoolExtendTest();
   void ReopenAndCheckPool(PMEMobjpool *pop, std::string path);
-  void ListFiles(const std::string &path, std::function<void(const std::string &)> func, int* file_count = 0);
 };
 
 #endif // PMDK_POOL_EXTEND_H

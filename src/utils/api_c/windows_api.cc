@@ -169,13 +169,21 @@ int ApiC::CleanDirectory(const std::string &path) {
 
     SetFilePermission(path + f_d.cFileName, 0600);
 
-    if (DirectoryExists(path + f_d.cFileName) &&
-        !RemoveDirectory((path + f_d.cFileName).c_str())) {
+
+    if (DirectoryExists(path + f_d.cFileName) && IsDirectoryEmpty(path + f_d.cFileName + "\\")) {
+      RemoveDirectory((path + f_d.cFileName).c_str());
+    }
+    else if (DirectoryExists(path + f_d.cFileName) &&
+        !CleanDirectory((path + f_d.cFileName + "\\").c_str())) {
       std::cerr << "Unable to remove directory: " << GetLastError()
                 << std::endl;
       ret = -1;
-    } else if (RemoveFile(path + f_d.cFileName) != 0) {
+    }
+    else if (!DirectoryExists(path + f_d.cFileName) && RemoveFile(path + f_d.cFileName) != 0) {
       std::cerr << "File " << f_d.cFileName << " removing failed" << std::endl;
+      ret = -1;
+    }
+    else {
       ret = -1;
     }
   } while (FindNextFile(h, &f_d));
@@ -202,8 +210,52 @@ int ApiC::RemoveDirectoryT(const std::string &path) {
 int ApiC::SetEnv(const std::string &name, const std::string &value) {
   return _putenv_s(name.c_str(), value.c_str());
 }
+
 int ApiC::UnsetEnv(const std::string &name) {
   return _putenv_s(name.c_str(), "");
+}
+
+bool ApiC::IsDirectoryEmpty(std::string &path) {
+  HANDLE hFind;
+  WIN32_FIND_DATAA data;
+  hFind = FindFirstFileA((path + "*").c_str(), &data);
+
+  while (FindNextFile(hFind, &data))
+  {
+  }
+
+  FindClose(hFind);
+  if (!lstrcmp(data.cFileName,"..")) {
+    return true;
+  }
+
+  return false;
+}
+
+void ApiC::CountFilesWithAction(const std::string &dir,
+  std::function<void(const std::string &)> func, int* file_count) {
+
+  WIN32_FIND_DATA fdFile;
+  HANDLE hFind = NULL;
+
+  hFind = FindFirstFile((dir + "\\*").c_str(), &fdFile);
+
+  do
+  {
+    if (strcmp(fdFile.cFileName, ".") != 0
+      && strcmp(fdFile.cFileName, "..") != 0) {
+
+      if (fdFile.dwFileAttributes &FILE_ATTRIBUTE_DIRECTORY) {
+        CountFilesWithAction(dir + fdFile.cFileName, func, file_count);
+      }
+      else {
+        func(dir + "\\" + fdFile.cFileName);
+        ++(*file_count);
+      }
+    }
+  } while (FindNextFile(hFind, &fdFile));
+
+  FindClose(hFind);
 }
 
 int ApiC::CreateFileT(const std::wstring &path, const std::wstring &content,
