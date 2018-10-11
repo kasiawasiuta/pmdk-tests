@@ -227,9 +227,9 @@ TEST_P(PMemObjReservePublishParamTest, RESERVE_PUBLISH_DEFER_FREE_01) {
     test_obj obj;
     obj.act = &act[th * (messages_per_thread)];
     obj.act_delete = &act_free[th * deletes_per_thread];
-    threads.push_back(
+    /*threads.push_back(
         std::thread(&PMemObjReservePublishTest::ReservePublishDeferFreeInThread,
-                    this, std::ref(obj)));
+                    this, std::ref(obj)));*/
   }
 
   /* Step 5 */
@@ -292,11 +292,11 @@ TEST_P(PMemObjReservePublishParamTest, RESERVE_PUBLISH_DEFER_FREE_01) {
  */
 TEST_P(PMemObjReservePublishParamTest, RESERVE_PUBLISH_DEFER_FREE_02) {
   size_t max_messages = pool_size / data_size;
-  pobj_action* act = new pobj_action[max_messages];
+  std::unique_ptr<pobj_action[]> act = std::make_unique<pobj_action[]>(max_messages);
   size_t total_messages = nof_threads * messages_per_thread;
   size_t deletes_per_thread = (messages_per_thread + 1) / 2;
   size_t total_deletes = nof_threads * deletes_per_thread;
-  pobj_action* act_free = new pobj_action[total_deletes];
+  std::unique_ptr<pobj_action[]> act_free = std::make_unique<pobj_action[]>(total_deletes);
 
   std::vector<std::thread> threads;
 
@@ -306,12 +306,10 @@ TEST_P(PMemObjReservePublishParamTest, RESERVE_PUBLISH_DEFER_FREE_02) {
   ASSERT_TRUE(pop != nullptr) << pmemobj_errormsg();
 
   for (int th = 0; th < nof_threads; th++) {
-    test_obj obj;
-    obj.act = &act[th * messages_per_thread];
-    obj.act_delete = &act_free[th * deletes_per_thread];
+    std::unique_ptr<test_obj> obj = std::make_unique<test_obj>(&act[th * messages_per_thread], &act_free[th * deletes_per_thread]);
     threads.push_back(
         std::thread(&PMemObjReservePublishTest::ReservePublishDeferFreeInThread,
-                    this, std::ref(obj)));
+                    this, std::move(obj)));
   }
 
   /* Step 5 */
@@ -324,11 +322,11 @@ TEST_P(PMemObjReservePublishParamTest, RESERVE_PUBLISH_DEFER_FREE_02) {
       makeMaximumAllocations(pop, data_size, &act[total_messages]);
 
   /* Step 6 */
-  int ret = pmemobj_publish(pop, act, total_messages + remaining_space);
+  int ret = pmemobj_publish(pop, act.get(), total_messages + remaining_space);
   ASSERT_EQ(ret, 0);
 
   /* Step 7 */
-  pmemobj_cancel(pop, act_free, total_deletes);
+  pmemobj_cancel(pop, act_free.get(), total_deletes);
 
   /* Step 8 */
   pmemobj_close(pop);
@@ -343,8 +341,6 @@ TEST_P(PMemObjReservePublishParamTest, RESERVE_PUBLISH_DEFER_FREE_02) {
 
   /* Step 11 */
   ApiC::RemoveFile(pool_path_);
-  delete[] act;
-  delete[] act_free;
 }
 
 /**
@@ -522,5 +518,9 @@ TEST_P(PMemObjReservePublishParamTest, RESERVE_PUBLISH_XRESERVE_02) {
 INSTANTIATE_TEST_CASE_P(
     ResPubParam, PMemObjReservePublishParamTest,
     ::testing::Values(
-        reserve_publish_params(reserve_publish_params(2 * 1024 * 1024, 1, 8)),
-        reserve_publish_params(reserve_publish_params(2 * 1024 * 1024, 8, 2))));
+        //reserve_publish_params(reserve_publish_params(2 * 1024 * 1024, 1, 8)),
+      reserve_publish_params(reserve_publish_params(2 * 1024 * 1024, 8, 2)),
+      reserve_publish_params(reserve_publish_params(2 * 1024 * 1024, 8, 4)),
+      reserve_publish_params(reserve_publish_params(2 * 1024 * 1024, 8, 2)),
+      reserve_publish_params(reserve_publish_params(2 * 1024 * 1024, 8, 2)),
+      reserve_publish_params(reserve_publish_params(2 * 1024 * 1024, 8, 2))));

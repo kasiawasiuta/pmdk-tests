@@ -108,9 +108,9 @@ void PMemObjReservePublishTest::ReservePublishCancelInThread(test_obj &obj) {
   }
 }
 
-void PMemObjReservePublishTest::ReservePublishDeferFreeInThread(test_obj &obj) {
-  struct pobj_action *act_publish = obj.act;
-  struct pobj_action *act_free = obj.act_delete;
+void PMemObjReservePublishTest::ReservePublishDeferFreeInThread(std::unique_ptr<test_obj> obj) {
+  struct pobj_action *act_publish = obj->act;
+  struct pobj_action *act_free = obj->act_delete;
   int free_count = 0;
   for (int i = 0; i < messages_per_thread; i++) {
     /* Step 2 */

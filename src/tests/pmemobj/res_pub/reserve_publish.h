@@ -71,6 +71,8 @@ class PMemObjReservePublishTest : public ::testing::Test {
   struct test_obj {
     pobj_action *act;
     pobj_action *act_delete;
+    test_obj(pobj_action *act, pobj_action *act_del) :act(act), act_delete(act_del) { }
+    test_obj() {}
   };
 
   struct test_x_obj {
@@ -89,7 +91,7 @@ class PMemObjReservePublishTest : public ::testing::Test {
 
   void ReservePublishInThread(test_obj &obj);
   void ReservePublishCancelInThread(test_obj &obj);
-  void ReservePublishDeferFreeInThread(test_obj &obj);
+  void ReservePublishDeferFreeInThread(std::unique_ptr<test_obj> obj);
   void ReservePublishWorker(test_obj &obj);
   void XReservePublish(test_x_obj &obj);
 };
